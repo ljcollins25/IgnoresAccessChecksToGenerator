@@ -13,7 +13,14 @@
     <ItemGroup>
       <InternalsAssemblyName Include="$(InternalsAssemblyNames.Split(;))" />
     </ItemGroup>
-    <PublicizeInternals SourceReferences="@(ReferencePath)" AssemblyNames="@(InternalsAssemblyName)" ExcludeTypeNames="$(InternalsAssemblyExcludeTypeNames)" UseEmptyMethodBodies="$(InternalsAssemblyUseEmptyMethodBodies)" IntermediateOutputPath="$(_IACTG_IntermediatePath)">
+    <PublicizeInternals 
+        SourceReferences="@(ReferencePath)" 
+        AssemblyNames="@(InternalsAssemblyName)" 
+        ExcludeTypeNames="$(InternalsAssemblyExcludeTypeNames)"
+        ExcludeMetadataNames="$(PublicizeItemExcludeMetadataName)"
+        IncludeMetadataNames="$(PublicizeItemIncludeMetadataName)"
+        UseEmptyMethodBodies="$(InternalsAssemblyUseEmptyMethodBodies)" 
+        IntermediateOutputPath="$(_IACTG_IntermediatePath)">
       <Output ItemName="_IACTG_ReferencePath" TaskParameter="TargetReferences" />
       <Output ItemName="_IACTG_RemovedReferences" TaskParameter="RemovedReferences" />
       <Output ItemName="Compile" TaskParameter="GeneratedCodeFiles" />

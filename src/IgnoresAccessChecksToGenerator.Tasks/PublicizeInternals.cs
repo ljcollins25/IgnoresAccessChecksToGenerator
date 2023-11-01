@@ -25,6 +25,10 @@ namespace IgnoresAccessChecksToGenerator.Tasks
 
         public string ExcludeTypeNames { get; set; }
 
+        public string[] ExcludeMetadataNames { get; set; } = new string[0];
+
+        public string[] IncludeMetadataNames { get; set; } = new string[0];
+
         public bool UseEmptyMethodBodies { get; set; } = true;
 
         [Output]
@@ -81,7 +85,9 @@ namespace IgnoresAccessChecksToGenerator.Tasks
                         Log.LogMessageFromText("Publicized assembly already exists at " + targetAssemblyPath, MessageImportance.Low);
                     }
 
-                    targetReferences.Add(new TaskItem(targetAssemblyPath));
+                    TaskItem taskItem = CreatePublicAssemblyTaskItem(assembly, targetAssemblyPath);
+
+                    targetReferences.Add(taskItem);
                     removedReferences.Add(assembly);
                 }
             }
@@ -90,6 +96,48 @@ namespace IgnoresAccessChecksToGenerator.Tasks
             RemovedReferences = removedReferences.ToArray();
 
             return true;
+        }
+
+        private TaskItem CreatePublicAssemblyTaskItem(ITaskItem assembly, string targetAssemblyPath)
+        {
+            TaskItem taskItem = new TaskItem(targetAssemblyPath);
+
+            if (IncludeMetadataNames.Length > 0)
+            {
+                foreach (var name in IncludeMetadataNames)
+                {
+                    CopyMetadataIfExists(assembly, taskItem, name);
+                }
+            }
+            else
+            {
+                // No include metadata, so use exclusion list
+                assembly.CopyMetadataTo(taskItem);
+                foreach (var name in ExcludeMetadataNames)
+                {
+                    assembly.RemoveMetadata(name);
+                }
+            }
+
+            const string ReferenceAssemblyName = "ReferenceAssembly";
+            const string OriginalReferenceAssemblyName = "UnpublicizedOriginalReferenceAssembly";
+            const string OriginalAssemblyName = "UnpublicizedOriginalAssembly";
+
+            // Stash the reference assembly metadata and clear the value
+            CopyMetadataIfExists(taskItem, taskItem, ReferenceAssemblyName, OriginalReferenceAssemblyName);
+            taskItem.RemoveMetadata(ReferenceAssemblyName);
+
+            taskItem.SetMetadata(OriginalAssemblyName, "FullPath");
+            return taskItem;
+        }
+
+        private static void CopyMetadataIfExists(ITaskItem source, TaskItem target, string name, string targetName = null)
+        {
+            var value = source.GetMetadata(name);
+            if (!string.IsNullOrEmpty(value))
+            {
+                target.SetMetadata(targetName ?? name, value);
+            }
         }
 
         private void GenerateAttributes(string path, IEnumerable<string> assemblyNames)
